@@ -1,0 +1,59 @@
+﻿@model BaseExchangeChallenge.OrderGenerator.Models.OrderFormViewModel
+@{
+    ViewData["Title"] = "Order Generator";
+    var result = ViewBag.Result as BaseExchangeChallenge.OrderGenerator.Services.ExecutionReportResult;
+}
+
+<h2>Nova Ordem (FIX 4.4)</h2>
+
+<form asp-action="Index" method="post">
+    <div>
+        <label asp-for="Symbol"></label>
+        <select asp-for="Symbol">
+            <option value="PETR4">PETR4</option>
+            <option value="VALE3">VALE3</option>
+            <option value="VIIA4">VIIA4</option>
+        </select>
+        <span asp-validation-for="Symbol" style="color:red"></span>
+    </div>
+
+    <div>
+        <label asp-for="Side"></label>
+        <select asp-for="Side">
+            <option value="BUY">Compra (BUY)</option>
+            <option value="SELL">Venda (SELL)</option>
+        </select>
+        <span asp-validation-for="Side" style="color:red"></span>
+    </div>
+
+    <div>
+        <label asp-for="Quantity"></label>
+        <input asp-for="Quantity" type="number" min="1" max="99999" />
+        <span asp-validation-for="Quantity" style="color:red"></span>
+    </div>
+
+    <div>
+        <label asp-for="Price"></label>
+        <input asp-for="Price" type="number" min="0.01" max="999.99" step="0.01" />
+        <span asp-validation-for="Price" style="color:red"></span>
+    </div>
+
+    <button type="submit">Enviar Ordem</button>
+</form>
+
+@if (result is not null)
+{
+    <hr />
+    <h3>Resposta</h3>
+    <p><strong>ClOrdID:</strong> @result.ClOrdId</p>
+    <p><strong>Status:</strong> @(result.Accepted ? "ACEITA" : "REJEITADA")</p>
+    <p><strong>ExecType:</strong> @result.ExecType</p>
+    <p><strong>OrdStatus:</strong> @result.OrdStatus</p>
+    <p><strong>Mensagem:</strong> @result.Text</p>
+}
+
+<div asp-validation-summary="All" style="color:red"></div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
