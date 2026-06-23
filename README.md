@@ -1,98 +1,221 @@
 # Base Exchange Challenge
 
-Technical challenge in C# with an ASP.NET Core MVC OrderGenerator and a FIX 4.4 OrderAccumulator using QuickFIX/n.
+Technical challenge implemented in C# with two applications:
+
+- **OrderGenerator** (ASP.NET Core MVC): receives order input from a web form and sends FIX `NewOrderSingle` messages.
+- **OrderAccumulator** (QuickFIX/n app): receives FIX orders, applies validation and exposure rules per symbol, and returns FIX `ExecutionReport` acceptance/rejection.
+
+---
 
 ## Technologies
 
 - C#
 - .NET 8
 - ASP.NET Core MVC
-- QuickFIX/n
-- FIX 4.4
-- HTML
-- CSS
+- QuickFIX/n Core
+- QuickFIX/n FIX 4.4
+- xUnit
+- Moq
+- Shouldly
 
-## Project Overview
+---
 
-This repository contains a backend technical challenge composed of two C# applications:
+## Solution Architecture
 
-- **OrderGenerator**: a web application responsible for receiving order input from a form and sending a `NewOrderSingle` message.
-- **OrderAccumulator**: a backend application responsible for receiving FIX messages, calculating financial exposure per symbol, and returning an `ExecutionReport` with acceptance or rejection.
+The solution is split into two independent projects that communicate through FIX 4.4 over TCP:
 
-## Project Structure
+1. **OrderGenerator** (initiator)
+   - UI for order entry
+   - input validation
+   - FIX session startup
+   - sends `NewOrderSingle`
+   - receives and displays `ExecutionReport`
+
+2. **OrderAccumulator** (acceptor)
+   - listens for FIX connections
+   - validates incoming orders
+   - calculates cumulative financial exposure by symbol
+   - applies the absolute exposure limit rule
+   - sends `ExecutionReport` with acceptance or rejection reason
+
+---
+
+## Business Rules
+
+- Allowed symbols: `PETR4`, `VALE3`, `VIIA4`
+- Allowed sides: Buy (`1`) and Sell (`2`)
+- Quantity:
+  - integer
+  - greater than `0`
+  - lower than `100000`
+- Price:
+  - decimal
+  - greater than `0`
+  - multiple of `0.01`
+  - lower than `1000`
+- Exposure is calculated **per symbol**
+- Buy increases exposure
+- Sell decreases exposure
+- Absolute exposure limit per symbol: `100,000,000`
+- Accepted orders return `ExecutionReport` with `ExecType = New`
+- Rejected orders return `ExecutionReport` with `ExecType = Rejected`
+
+---
+
+## Repository Structure
+
+> Below is the complete expected structure for using this solution (projects + main folders).  
+> If your local tree differs slightly, keep the same project responsibilities and FIX config placement.
 
 ```text
 BaseExchangeChallenge/
 ├── src/
 │   ├── BaseExchangeChallenge.OrderGenerator/
+│   │   ├── Controllers/
+│   │   ├── Models/
+│   │   ├── Services/
+│   │   ├── Views/
+│   │   │   ├── Home/
+│   │   │   └── Shared/
+│   │   ├── wwwroot/
+│   │   │   ├── css/
+│   │   │   ├── js/
+│   │   │   └── lib/
+│   │   ├── Fix/
+│   │   │   └── ordergenerator.cfg
+│   │   ├── Properties/
+│   │   ├── Program.cs
+│   │   ├── appsettings.json
+│   │   └── BaseExchangeChallenge.OrderGenerator.csproj
+│   │
 │   └── BaseExchangeChallenge.OrderAccumulator/
+│       ├── Fix/
+│       │   ├── Contracts/
+│       │   ├── Services/
+│       │   ├── QuickFixApp.cs
+│       │   └── orderaccumulator.cfg
+│       ├── Program.cs
+│       └── BaseExchangeChallenge.OrderAccumulator.csproj
+│
 ├── tests/
+│   ├── BaseExchangeChallenge.OrderAccumulator.Tests/
+│   │   ├── Unit/
+│   │   ├── Integration/
+│   │   └── BaseExchangeChallenge.OrderAccumulator.Tests.csproj
+│   │
+│   └── BaseExchangeChallenge.OrderGenerator.Tests/
+│       ├── Unit/
+│       ├── Integration/
+│       ├── fixtures/
+│       │   ├── ordergenerator-test.cfg
+│       │   └── orderaccumulator-test.cfg
+│       └── BaseExchangeChallenge.OrderGenerator.Tests.csproj
+│
+├── BaseExchangeChallenge.sln
+├── .gitignore
 └── README.md
 ```
 
-## Requirements
+---
 
-- .NET 8 SDK or newer
-- Visual Studio 2026 or Visual Studio Code / Rider
-- Local environment capable of running two .NET applications
+## Prerequisites
 
-## How to Run
+- .NET SDK 8.0+
+- Windows, Linux, or macOS
+- IDE (optional): Visual Studio, Rider, or VS Code
 
-### 1. Clone the repository
+---
+
+## Setup and Run
+
+### 1) Clone repository
 
 ```bash
 git clone https://github.com/nsaraiva/base-exchange-challenge.git
 cd base-exchange-challenge
 ```
 
-### 2. Restore dependencies
+### 2) Restore dependencies
 
 ```bash
 dotnet restore
 ```
 
-### 3. Run the OrderAccumulator
+### 3) Build solution
+
+```bash
+dotnet build
+```
+
+### 4) Run OrderAccumulator (terminal 1)
 
 ```bash
 cd src/BaseExchangeChallenge.OrderAccumulator
 dotnet run
 ```
 
-### 4. Run the OrderGenerator
-
-Open a new terminal and run:
+### 5) Run OrderGenerator (terminal 2)
 
 ```bash
 cd src/BaseExchangeChallenge.OrderGenerator
 dotnet run
 ```
 
-### 5. Access the application
+### 6) Open browser
 
-Open the local URL shown in the terminal and use the form to submit orders.
+Access the URL printed by `OrderGenerator` (typically similar to `https://localhost:xxxx`), fill the form, and submit orders.
 
-## Business Rules
+---
 
-- Allowed symbols: `PETR4`, `VALE3`, `VIIA4`
-- Allowed sides: Buy and Sell
-- Quantity must be a positive integer lower than `100000`
-- Price must be a positive decimal multiple of `0.01` and lower than `1000`
-- Financial exposure is calculated per symbol
-- Buy orders increase exposure
-- Sell orders decrease exposure
-- Absolute exposure limit per symbol: `R$ 100,000,000`
-- Accepted orders must return `ExecutionReport` with `ExecType = New`
-- Rejected orders must return `ExecutionReport` with `ExecType = Rejected`
+## Running Tests
 
-## Notes
+From repository root:
 
-- The solution is being developed as a technical challenge.
-- The communication between applications is based on the FIX 4.4 protocol.
-- Additional improvements may include automated tests, Docker support, and exposure persistence.
+```bash
+dotnet test
+```
 
-## Git
+Run specific test project:
 
-Make sure the repository includes a proper `.gitignore` file for .NET and Visual Studio artifacts.
+```bash
+dotnet test tests/BaseExchangeChallenge.OrderAccumulator.Tests
+dotnet test tests/BaseExchangeChallenge.OrderGenerator.Tests
+```
+
+---
+
+## FIX Configuration Notes
+
+- Runtime configs:
+  - `src/BaseExchangeChallenge.OrderGenerator/Fix/ordergenerator.cfg`
+  - `src/BaseExchangeChallenge.OrderAccumulator/Fix/orderaccumulator.cfg`
+- Integration test configs:
+  - `tests/BaseExchangeChallenge.OrderGenerator.Tests/fixtures/ordergenerator-test.cfg`
+  - `tests/BaseExchangeChallenge.OrderGenerator.Tests/fixtures/orderaccumulator-test.cfg`
+
+If you run into port conflicts, change test ports in both fixture files consistently.
+
+---
+
+## Troubleshooting
+
+- **Session not connecting**
+  - verify `SenderCompID` / `TargetCompID` pairing in both cfg files
+  - verify host/port match between initiator and acceptor
+- **Config file not found in tests**
+  - ensure fixture files are under `tests/.../fixtures`
+  - ensure test `.csproj` copies `fixtures/*.cfg` to output
+- **Order rejected unexpectedly**
+  - confirm symbol/side/quantity/price constraints
+  - check cumulative exposure already stored for that symbol
+
+---
+
+## Git Ignore
+
+This repository should include a `.gitignore` for .NET and IDE artifacts (`bin/`, `obj/`, `.vs/`, etc.).
+
+---
 
 ## Challenge Reference
 
