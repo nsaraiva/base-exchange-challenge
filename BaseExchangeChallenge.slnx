@@ -1,3 +1,6 @@
 <Solution>
+  <Project Path="src/BaseExchangeChallenge.OrderAccumulator/BaseExchangeChallenge.OrderAccumulator.csproj" Id="987a7b29-5574-4dd2-81fb-9714d7ebdc42" />
   <Project Path="src/BaseExchangeChallenge.OrderGenerator/BaseExchangeChallenge.OrderGenerator.csproj" Id="cbda9e27-cff7-4417-91ce-29205bf058b3" />
+  <Project Path="test/BaseExchangeChallenge.OrderAccumulator.Tests/BaseExchangeChallenge.OrderAccumulator.Tests.csproj" />
+  <Project Path="test/BaseExchangeChallenge.OrderGenerator.Tests/BaseExchangeChallenge.OrderGenerator.Tests.csproj" Id="e94e4397-81cf-48b0-8536-1ca4515a251b" />
 </Solution>
